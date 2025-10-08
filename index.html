@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QRPro - Professional QR Code & Business Card Generator</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --accent: #4895ef;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --success: #4cc9f0;
+            --premium: #ff9e00;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: var(--dark);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 40px 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+        
+        .tagline {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .premium-badge {
+            display: inline-block;
+            background: var(--premium);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .app-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card h2 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background 0.3s;
+            width: 100%;
+        }
+        
+        button:hover {
+            background: var(--secondary);
+        }
+        
+        .premium-feature {
+            border-left: 4px solid var(--premium);
+            padding-left: 15px;
+            margin: 15px 0;
+        }
+        
+        .premium-only {
+            opacity: 0.6;
+            position: relative;
+        }
+        
+        .premium-only::after {
+            content: "PREMIUM";
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            background: var(--premium);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        
+        .premium-upsell {
+            background: linear-gradient(135deg, #ff9e00 0%, #ff6b00 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .premium-upsell h3 {
+            margin-bottom: 10px;
+        }
+        
+        .premium-button {
+            background: white;
+            color: var(--premium);
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        .premium-button:hover {
+            background: #f0f0f0;
+        }
+        
+        .result-container {
+            text-align: center;
+            padding: 20px;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #qrcode-container {
+            margin: 0 auto 20px;
+            max-width: 256px;
+        }
+        
+        .download-btn {
+            background: var(--success);
+            margin-top: 15px;
+        }
+        
+        /* Enhanced Business Card Styles */
+        .business-card {
+            width: 350px;
+            height: 200px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+            color: white;
+        }
+        
+        .business-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .card-content {
+            display: flex;
+            height: 100%;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .card-left {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .card-right {
+            width: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: space-between;
+        }
+        
+        .card-photo {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid white;
+            background: #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 0.8rem;
+            text-align: center;
+            overflow: hidden;
+        }
+        
+        .card-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .card-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .card-title {
+            font-size: 0.85rem;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+        
+        .card-company {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .card-contact {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            font-size: 0.75rem;
+            opacity: 0.9;
+        }
+        
+        .card-qr {
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 5px;
+            padding: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .card-qr img {
+            width: 100%;
+            height: 100%;
+            border-radius: 3px;
+        }
+        
+        .card-decoration {
+            position: absolute;
+            bottom: -20px;
+            right: -20px;
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+        }
+        
+        .file-upload {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+        
+        .file-upload-label {
+            display: block;
+            padding: 12px;
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .file-upload-label:hover {
+            background: #e9ecef;
+            border-color: var(--primary);
+        }
+        
+        .file-upload-input {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab.active {
+            border-bottom: 3px solid var(--primary);
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .visible {
+            display: block !important;
+        }
+        
+        #qrcode-container img {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .card-design-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .design-option {
+            height: 40px;
+            border-radius: 5px;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        
+        .design-option.active {
+            border-color: var(--primary);
+        }
+        
+        .design-1 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .design-2 {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .design-3 {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .design-4 {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+        
+        .design-5 {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+        
+        .design-6 {
+            background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+        }
+        
+        /* Payment Modal */
+        .payment-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .payment-modal.active {
+            display: flex;
+        }
+        
+        .payment-content {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .payment-plans {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .payment-plan {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .payment-plan:hover {
+            border-color: var(--primary);
+        }
+        
+        .payment-plan.selected {
+            border-color: var(--primary);
+            background: #f8f9ff;
+        }
+        
+        .plan-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .plan-price {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        
+        .plan-features {
+            list-style: none;
+            margin: 10px 0;
+        }
+        
+        .plan-features li {
+            padding: 5px 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .plan-features li:before {
+            content: "✓";
+            color: var(--success);
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .close-modal {
+            background: #6c757d;
+            margin-top: 10px;
+        }
+        
+        .premium-status {
+            text-align: center;
+            padding: 10px;
+            background: var(--success);
+            color: white;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .premium-status.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>QRPro <span class="premium-badge">PRO</span></h1>
+            <p class="tagline">Create professional QR codes and digital business cards in seconds</p>
+            <p>No account required • 100% client-side • Your data never leaves your device</p>
+            <div class="premium-status" id="premium-status">
+                ✅ Premium Features Activated! Thank you for your purchase.
+            </div>
+        </header>
+        
+        <div class="app-container">
+            <div class="card">
+                <div class="tabs">
+                    <div class="tab active" data-tab="qrcode">QR Code Generator</div>
+                    <div class="tab" data-tab="business-card">Business Card</div>
+                </div>
+                
+                <div class="tab-content active" id="qrcode-tab">
+                    <h2>Create Your QR Code</h2>
+                    
+                    <div class="form-group">
+                        <label for="qr-content">Content (URL, text, etc.)</label>
+                        <textarea id="qr-content" rows="3" placeholder="https://example.com or any text">https://example.com</textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="qr-size">Size</label>
+                        <select id="qr-size">
+                            <option value="4">Small</option>
+                            <option value="6" selected>Medium</option>
+                            <option value="8">Large</option>
+                        </select>
+                    </div>
+                    
+                    <div class="premium-feature">
+                        <div class="form-group premium-only">
+                            <label for="qr-color">Color</label>
+                            <input type="color" id="qr-color" value="#4361ee">
+                        </div>
+                        
+                        <div class="form-group premium-only">
+                            <label for="qr-bg-color">Background Color</label>
+                            <input type="color" id="qr-bg-color" value="#ffffff">
+                        </div>
+                    </div>
+                    
+                    <button id="generate-qr">Generate QR Code</button>
+                    
+                    <div class="premium-upsell">
+                        <h3>Unlock Premium Features</h3>
+                        <p>Custom colors, logos, advanced styling, and more!</p>
+                        <button class="premium-button" id="upgrade-qr">Upgrade to Pro</button>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="business-card-tab">
+                    <h2>Create Digital Business Card</h2>
+                    
+                    <div class="form-group">
+                        <label for="card-name">Full Name</label>
+                        <input type="text" id="card-name" placeholder="John Doe" value="John Doe">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="card-title">Title</label>
+                        <input type="text" id="card-title" placeholder="Marketing Director" value="Marketing Director">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="card-company">Company</label>
+                        <input type="text" id="card-company" placeholder="Acme Inc." value="Acme Inc.">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="card-email">Email</label>
+                        <input type="email" id="card-email" placeholder="john@example.com" value="john@example.com">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="card-phone">Phone</label>
+                        <input type="tel" id="card-phone" placeholder="+1 (555) 123-4567" value="+1 (555) 123-4567">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Upload Your Photo</label>
+                        <div class="file-upload">
+                            <label class="file-upload-label" for="card-photo">
+                                <span id="file-upload-text">Click to upload your photo</span>
+                            </label>
+                            <input type="file" id="card-photo" class="file-upload-input" accept="image/*">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Card Design</label>
+                        <div class="card-design-options">
+                            <div class="design-option design-1 active" data-design="1"></div>
+                            <div class="design-option design-2" data-design="2"></div>
+                            <div class="design-option design-3" data-design="3"></div>
+                            <div class="design-option design-4" data-design="4"></div>
+                            <div class="design-option design-5" data-design="5"></div>
+                            <div class="design-option design-6" data-design="6"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="premium-feature">
+                        <div class="form-group premium-only">
+                            <label for="card-website">Website</label>
+                            <input type="url" id="card-website" placeholder="https://example.com">
+                        </div>
+                        
+                        <div class="form-group premium-only">
+                            <label for="card-logo">Company Logo URL</label>
+                            <input type="url" id="card-logo" placeholder="https://example.com/logo.png">
+                        </div>
+                    </div>
+                    
+                    <button id="generate-card">Generate Business Card</button>
+                    
+                    <div class="premium-upsell">
+                        <h3>Go Professional</h3>
+                        <p>Add your logo, website, and customize the design!</p>
+                        <button class="premium-button" id="upgrade-card">Upgrade to Pro</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="result-container">
+                    <h2>Your Result</h2>
+                    <div id="result-area">
+                        <p id="result-message">Your QR code or business card will appear here</p>
+                        <div id="qrcode-container" class="hidden"></div>
+                        <div id="business-card-preview" class="hidden">
+                            <div class="business-card" id="preview-card">
+                                <div class="card-decoration"></div>
+                                <div class="card-content">
+                                    <div class="card-left">
+                                        <div>
+                                            <div class="card-name" id="preview-name">John Doe</div>
+                                            <div class="card-title" id="preview-title">Marketing Director</div>
+                                            <div class="card-company" id="preview-company">Acme Inc.</div>
+                                        </div>
+                                        <div class="card-contact">
+                                            <div id="preview-email">john@example.com</div>
+                                            <div id="preview-phone">+1 (555) 123-4567</div>
+                                            <div id="preview-website" class="hidden">example.com</div>
+                                        </div>
+                                    </div>
+                                    <div class="card-right">
+                                        <div class="card-photo" id="preview-photo">
+                                            No Photo
+                                        </div>
+                                        <div class="card-qr" id="card-qr-code"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button id="download-btn" class="download-btn hidden">Download</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Payment Modal -->
+        <div class="payment-modal" id="payment-modal">
+            <div class="payment-content">
+                <h2>Upgrade to QRPro Premium</h2>
+                <p>Unlock all premium features with one of our plans:</p>
+                
+                <div class="payment-plans">
+                    <div class="payment-plan" data-plan="monthly">
+                        <div class="plan-name">Monthly Plan</div>
+                        <div class="plan-price">$9.99/month</div>
+                        <ul class="plan-features">
+                            <li>Custom QR code colors</li>
+                            <li>Advanced business card designs</li>
+                            <li>Website & logo integration</li>
+                            <li>High-resolution downloads</li>
+                            <li>Priority support</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="payment-plan" data-plan="yearly">
+                        <div class="plan-name">Yearly Plan (Save 30%)</div>
+                        <div class="plan-price">$83.88/year</div>
+                        <ul class="plan-features">
+                            <li>Everything in Monthly Plan</li>
+                            <li>Save $36 vs monthly</li>
+                            <li>Free updates for one year</li>
+                            <li>Early access to new features</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <button id="stripe-checkout" class="premium-button">Continue to Payment</button>
+                <button class="close-modal">Cancel</button>
+            </div>
+        </div>
+        
+        <footer>
+            <p>QRPro &copy; 2023 | All processing happens in your browser - your data is never sent to our servers</p>
+            <p>For businesses: <a href="#">Contact us for enterprise solutions</a></p>
+        </footer>
+    </div>
+
+    <script>
+        // Initialize Stripe with your publishable key
+        // Replace with your actual Stripe publishable key
+        const stripe = Stripe('pk_test_51ExampleYourStripePublishableKey');
+        let selectedPlan = 'monthly';
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            let selectedDesign = 1;
+            let uploadedPhoto = null;
+            
+            // Check if user is already premium (from localStorage)
+            checkPremiumStatus();
+            
+            // Tab switching
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    
+                    // Update active tab
+                    tabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Show active content
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                    
+                    // Reset results
+                    resetResults();
+                });
+            });
+            
+            // Design selection
+            document.querySelectorAll('.design-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.design-option').forEach(opt => {
+                        opt.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    selectedDesign = this.getAttribute('data-design');
+                });
+            });
+            
+            // Photo upload
+            document.getElementById('card-photo').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                        alert('Please select an image smaller than 5MB');
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        uploadedPhoto = event.target.result;
+                        document.getElementById('file-upload-text').textContent = 'Photo selected';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // QR Code Generation
+            document.getElementById('generate-qr').addEventListener('click', function() {
+                const content = document.getElementById('qr-content').value;
+                const typeNumber = parseInt(document.getElementById('qr-size').value);
+                
+                if (!content) {
+                    alert('Please enter content for the QR code');
+                    return;
+                }
+                
+                try {
+                    // Clear previous QR code
+                    document.getElementById('qrcode-container').innerHTML = '';
+                    
+                    // Check if premium features should be applied
+                    const isPremium = localStorage.getItem('qrProPremium') === 'true';
+                    let qrColor = '#4361ee';
+                    let qrBgColor = '#ffffff';
+                    
+                    if (isPremium) {
+                        qrColor = document.getElementById('qr-color').value;
+                        qrBgColor = document.getElementById('qr-bg-color').value;
+                    }
+                    
+                    // Generate QR code using the qrcode-generator library
+                    const qr = qrcode(typeNumber, 'M');
+                    qr.addData(content);
+                    qr.make();
+                    
+                    // Create QR code image
+                    const qrImage = qr.createImgTag(4, 8);
+                    document.getElementById('qrcode-container').innerHTML = qrImage;
+                    
+                    // Apply premium colors if available
+                    if (isPremium) {
+                        const qrImg = document.querySelector('#qrcode-container img');
+                        if (qrImg) {
+                            // Note: The qrcode-generator library doesn't support color changes directly
+                            // In a real implementation, you might need a different library or approach
+                            console.log('Premium colors selected:', qrColor, qrBgColor);
+                        }
+                    }
+                    
+                    // Show results
+                    showQRCodeResult();
+                } catch (error) {
+                    console.error('QR Code generation error:', error);
+                    alert('Error generating QR code. Please try with shorter text or different size.');
+                }
+            });
+            
+            // Business Card Generation
+            document.getElementById('generate-card').addEventListener('click', function() {
+                const name = document.getElementById('card-name').value;
+                const title = document.getElementById('card-title').value;
+                const company = document.getElementById('card-company').value;
+                const email = document.getElementById('card-email').value;
+                const phone = document.getElementById('card-phone').value;
+                const isPremium = localStorage.getItem('qrProPremium') === 'true';
+                
+                if (!name || !title || !company || !email || !phone) {
+                    alert('Please fill in all required fields');
+                    return;
+                }
+                
+                // Update business card preview
+                document.getElementById('preview-name').textContent = name;
+                document.getElementById('preview-title').textContent = title;
+                document.getElementById('preview-company').textContent = company;
+                document.getElementById('preview-email').textContent = email;
+                document.getElementById('preview-phone').textContent = phone;
+                
+                // Update photo
+                const photoElement = document.getElementById('preview-photo');
+                if (uploadedPhoto) {
+                    photoElement.innerHTML = `<img src="${uploadedPhoto}" alt="Profile Photo">`;
+                } else {
+                    photoElement.innerHTML = 'No Photo';
+                    photoElement.style.display = 'flex';
+                    photoElement.style.alignItems = 'center';
+                    photoElement.style.justifyContent = 'center';
+                }
+                
+                // Apply selected design
+                applyCardDesign(selectedDesign);
+                
+                // Generate QR code for business card
+                let vcard = `BEGIN:VCARD
+VERSION:3.0
+FN:${name}
+TITLE:${title}
+ORG:${company}
+EMAIL:${email}
+TEL:${phone}`;
+
+                // Add website if premium and provided
+                if (isPremium) {
+                    const website = document.getElementById('card-website').value;
+                    if (website) {
+                        vcard += `\nURL:${website}`;
+                        document.getElementById('preview-website').textContent = website;
+                        document.getElementById('preview-website').classList.remove('hidden');
+                    }
+                }
+
+                vcard += '\nEND:VCARD';
+                
+                try {
+                    // Clear previous QR code
+                    document.getElementById('card-qr-code').innerHTML = '';
+                    
+                    // Generate QR code for business card
+                    const qr = qrcode(0, 'L');
+                    qr.addData(vcard);
+                    qr.make();
+                    
+                    // Create QR code with proper styling for the card
+                    const qrImage = qr.createImgTag(2, 0);
+                    document.getElementById('card-qr-code').innerHTML = qrImage;
+                    
+                    // Ensure the QR code image is properly sized
+                    const qrImg = document.querySelector('#card-qr-code img');
+                    if (qrImg) {
+                        qrImg.style.width = '100%';
+                        qrImg.style.height = '100%';
+                        qrImg.style.objectFit = 'contain';
+                    }
+                    
+                    // Show business card result
+                    showBusinessCardResult();
+                } catch (error) {
+                    console.error('Business card QR code error:', error);
+                    document.getElementById('card-qr-code').innerHTML = '<div style="color: red; font-size: 8px;">QR Error</div>';
+                    showBusinessCardResult();
+                }
+            });
+            
+            // Payment modal handlers
+            document.getElementById('upgrade-qr').addEventListener('click', showPaymentModal);
+            document.getElementById('upgrade-card').addEventListener('click', showPaymentModal);
+            
+            // Plan selection
+            document.querySelectorAll('.payment-plan').forEach(plan => {
+                plan.addEventListener('click', function() {
+                    document.querySelectorAll('.payment-plan').forEach(p => {
+                        p.classList.remove('selected');
+                    });
+                    this.classList.add('selected');
+                    selectedPlan = this.getAttribute('data-plan');
+                });
+            });
+            
+            // Stripe checkout
+            document.getElementById('stripe-checkout').addEventListener('click', function() {
+                // In a real implementation, you would create a Checkout Session on your server
+                // and redirect to Stripe Checkout. For this demo, we'll simulate a successful payment
+                
+                // Simulate payment processing
+                document.getElementById('payment-modal').classList.remove('active');
+                
+                // Show loading state
+                const checkoutBtn = document.getElementById('stripe-checkout');
+                const originalText = checkoutBtn.textContent;
+                checkoutBtn.textContent = 'Processing...';
+                checkoutBtn.disabled = true;
+                
+                // Simulate API call to server
+                setTimeout(() => {
+                    // Mark user as premium
+                    localStorage.setItem('qrProPremium', 'true');
+                    checkPremiumStatus();
+                    
+                    // Reset button
+                    checkoutBtn.textContent = originalText;
+                    checkoutBtn.disabled = false;
+                    
+                    alert('Payment successful! Premium features have been activated.');
+                }, 2000);
+            });
+            
+            // Close modal
+            document.querySelector('.close-modal').addEventListener('click', function() {
+                document.getElementById('payment-modal').classList.remove('active');
+            });
+            
+            // Apply card design
+            function applyCardDesign(design) {
+                const card = document.getElementById('preview-card');
+                card.className = 'business-card';
+                
+                switch(design) {
+                    case '1':
+                        card.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                        break;
+                    case '2':
+                        card.style.background = 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
+                        break;
+                    case '3':
+                        card.style.background = 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)';
+                        break;
+                    case '4':
+                        card.style.background = 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)';
+                        break;
+                    case '5':
+                        card.style.background = 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)';
+                        break;
+                    case '6':
+                        card.style.background = 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)';
+                        break;
+                }
+            }
+            
+            // Show QR Code Result
+            function showQRCodeResult() {
+                document.getElementById('result-message').classList.add('hidden');
+                document.getElementById('qrcode-container').classList.remove('hidden');
+                document.getElementById('business-card-preview').classList.add('hidden');
+                document.getElementById('download-btn').classList.remove('hidden');
+                
+                // Set up download
+                document.getElementById('download-btn').onclick = function() {
+                    const img = document.querySelector('#qrcode-container img');
+                    if (img) {
+                        const link = document.createElement('a');
+                        link.download = 'qrcode.png';
+                        link.href = img.src;
+                        link.click();
+                    } else {
+                        alert('No QR code available to download');
+                    }
+                };
+            }
+            
+            // Show Business Card Result
+            function showBusinessCardResult() {
+                document.getElementById('result-message').classList.add('hidden');
+                document.getElementById('qrcode-container').classList.add('hidden');
+                document.getElementById('business-card-preview').classList.remove('hidden');
+                document.getElementById('download-btn').classList.remove('hidden');
+                
+                // Set up download for business card
+                document.getElementById('download-btn').onclick = function() {
+                    const isPremium = localStorage.getItem('qrProPremium') === 'true';
+                    if (isPremium) {
+                        // In a real implementation, use html2canvas to capture and download
+                        alert('Downloading business card as PNG...');
+                        // html2canvas(document.getElementById('preview-card')).then(canvas => {
+                        //     const link = document.createElement('a');
+                        //     link.download = 'business-card.png';
+                        //     link.href = canvas.toDataURL('image/png');
+                        //     link.click();
+                        // });
+                    } else {
+                        alert('Please upgrade to Premium to download business cards as images.');
+                    }
+                };
+            }
+            
+            // Show payment modal
+            function showPaymentModal() {
+                document.getElementById('payment-modal').classList.add('active');
+                // Select monthly plan by default
+                document.querySelector('.payment-plan[data-plan="monthly"]').classList.add('selected');
+                selectedPlan = 'monthly';
+            }
+            
+            // Check premium status and update UI
+            function checkPremiumStatus() {
+                const isPremium = localStorage.getItem('qrProPremium') === 'true';
+                if (isPremium) {
+                    // Enable premium features
+                    document.querySelectorAll('.premium-only').forEach(feature => {
+                        feature.style.opacity = '1';
+                        const input = feature.querySelector('input');
+                        if (input) input.disabled = false;
+                    });
+                    
+                    // Show premium status
+                    document.getElementById('premium-status').classList.add('active');
+                    
+                    // Update upgrade buttons
+                    document.querySelectorAll('.premium-button').forEach(button => {
+                        button.textContent = 'Premium Activated';
+                        button.style.background = 'var(--success)';
+                        button.style.color = 'white';
+                        button.disabled = true;
+                    });
+                }
+            }
+            
+            function resetResults() {
+                document.getElementById('result-message').classList.remove('hidden');
+                document.getElementById('qrcode-container').classList.add('hidden');
+                document.getElementById('business-card-preview').classList.add('hidden');
+                document.getElementById('download-btn').classList.add('hidden');
+                document.getElementById('qrcode-container').innerHTML = '';
+                document.getElementById('card-qr-code').innerHTML = '';
+            }
+        });
+    </script>
+</body>
+</html>
